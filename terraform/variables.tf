@@ -12,6 +12,6 @@ variable "memory_quota" {
 
 variable "api_token" {
   type        = string
-  description = "API token consumed by the app"
-  default     = "sk-skybyte-prod-7f3c9a2b1e8d4a6c"
+  description = "API token consumed by the app. Pass via TF_VAR_api_token environment variable. Never hardcode."
+  sensitive   = true
 }

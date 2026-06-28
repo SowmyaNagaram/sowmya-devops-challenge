@@ -1,55 +1,66 @@
-# Skybyte API
+# Skybyte DevOps Challenge — Sowmya Nagaram
 
-A small Python service that returns a greeting. Runs in Kubernetes via Helm.
+## What Was Wrong and What Changed
 
-> **Note:** the engineer who set this up is no longer with the team. Some of this README may be out of date. **The challenge brief is in [`CHALLENGE.md`](./CHALLENGE.md) — start there.**
+The starter repository had critical defects across security, reliability,
+hygiene, and documentation. The container ran as root with no security
+context, a production secret was committed in plaintext in three separate
+files, the CI pipeline reported green while validating nothing (flake8
+excluded every file it should lint, helm lint and terraform validate both
+used || true to swallow errors), probes pointed to the wrong endpoint with
+no thresholds, the app had no SIGTERM handler and used Flask's dev server
+in production, and there were no resource limits. All defects are
+documented in AUDIT.md with file paths, impact, and fixes applied.
+
+---
 
 ## Prerequisites
 
-- Docker Desktop (or any Docker engine)
-- A local Kubernetes cluster (Minikube or Kind)
-- Helm 3.x
-- Terraform 1.5+
-- Python 3.9+ (for running tests locally)
+Tested with these versions:
 
-## Quick start
+| Tool | Version |
+|------|---------|
+| Docker | 24.x+ |
+| Minikube | 1.32.x+ |
+| kubectl | 1.28.x+ |
+| Helm | 3.14.x+ |
+| Terraform | 1.5.x+ |
+| Python | 3.11.x+ |
+
+---
+
+## Quick Start
 
 ```bash
+# Clone the repo
+git clone https://github.com/SowmyaNagaram/sowmya-devops-challenge.git
+cd sowmya-devops-challenge
+
+# Start Minikube
+minikube start
+
+# Set the API token (never hardcoded)
+export TF_VAR_api_token="your-secret-here"
+
+# Run setup
+chmod +x setup.sh
 ./setup.sh
+
+# Run system checks
+chmod +x system-checks.sh
+./system-checks.sh
 ```
 
-This script will build the image, apply Terraform, and install the Helm chart.
+---
 
-To verify the deployment:
+## SLO Statement
 
-```bash
-kubectl -n devops-challenge get pods
-kubectl -n devops-challenge port-forward svc/skybyte-app 8080:80
-curl http://localhost:8080/
-# expected: {"message": "Hello, Candidate", "version": "1.0.0"}
-```
+99% of requests to `/` complete in under 250ms over a rolling 7-day
+window. We detect a breach by alerting on the
+`http_request_duration_seconds` histogram's p99 bucket exceeding 250ms
+for 5 consecutive minutes using a Prometheus alerting rule on the
+`http_request_duration_seconds_bucket` metric with `le="0.25"` label.
 
-## Architecture
+---
 
-```
-[Client] ──► [Service:80] ──► [Pod:appuser:80]
-```
-
-The pod runs as a non-root user (appuser) and listens on port 80. Health checks are wired to `/healthz`.
-
-## CI
-
-GitHub Actions runs lint, helm lint, terraform validate, and a Docker build on every push. See `.github/workflows/ci.yml`.
-
-## Layout
-
-```
-/
-├── app/                  Python service
-├── Dockerfile
-├── helm/skybyte-app/     Helm chart
-├── terraform/            Namespace + ResourceQuota + secret
-├── .github/workflows/    CI
-├── setup.sh
-└── CHALLENGE.md          ← read this
-```
+## Repository Structure

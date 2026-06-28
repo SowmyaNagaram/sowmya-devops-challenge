@@ -1,19 +1,31 @@
 #!/usr/bin/env bash
-# setup.sh — local deployment helper
-#
-# Builds the image, applies Terraform, installs/upgrades the Helm release.
+set -euo pipefail
 
-echo "==> Building Docker image"
-docker build -t skybyte/app:latest .
+echo "==> Checking required tools..."
+command -v docker     >/dev/null 2>&1 || { echo "ERROR: docker not found"; exit 1; }
+command -v terraform  >/dev/null 2>&1 || { echo "ERROR: terraform not found"; exit 1; }
+command -v helm       >/dev/null 2>&1 || { echo "ERROR: helm not found"; exit 1; }
+command -v kubectl    >/dev/null 2>&1 || { echo "ERROR: kubectl not found"; exit 1; }
 
-echo "==> Applying Terraform"
+echo "==> Building Docker image..."
+docker build -t skybyte/app:1.0.0 .
+
+echo "==> Applying Terraform..."
 cd terraform
-terraform init
+terraform init -upgrade
 terraform apply -auto-approve
 cd ..
 
-echo "==> Installing Helm chart"
+echo "==> Installing/upgrading Helm chart..."
 helm upgrade --install skybyte-app helm/skybyte-app \
-  --namespace devops-challenge
+  --namespace devops-challenge \
+  --create-namespace \
+  --wait \
+  --timeout 120s
 
-echo "==> Done"
+echo "==> Verifying rollout..."
+kubectl rollout status deployment/skybyte-app \
+  --namespace devops-challenge \
+  --timeout 60s
+
+echo "==> All steps completed successfully."

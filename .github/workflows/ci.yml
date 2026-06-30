@@ -87,15 +87,13 @@ jobs:
           exit-code: '1'
           severity: HIGH,CRITICAL
 
-  kyverno-policy-check:
+kyverno-policy-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
       - name: Install Kyverno CLI
-        run: |
-          curl -sSL https://github.com/kyverno/kyverno/releases/latest/download/kyverno-cli_latest_linux_x86_64.tar.gz | tar -xz
-          sudo mv kyverno /usr/local/bin/
+        uses: kyverno/action-install-cli@v0.2.0
       - name: Render Helm templates
         run: |
           helm template skybyte-app helm/skybyte-app > /tmp/rendered.yaml

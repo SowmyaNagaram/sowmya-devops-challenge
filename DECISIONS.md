@@ -229,3 +229,36 @@ a single sequential job. We accept this for faster developer feedback.
 
 During testing, applying the original deployment.yaml (before fixes)
 against our policies produced the following rejection:
+
+---
+
+### Decision: Handling unfixable base-image CVEs
+**Context:** Trivy image scan flagged 9 vulnerabilities in
+python:3.11-slim, including CRITICAL/HIGH findings in perl-base and
+ncurses. These are transitive OS packages pulled in by the base image,
+not dependencies our app uses directly.
+
+**Options considered:**
+- Switch to distroless to eliminate perl/ncurses entirely — but
+  breaks kubectl exec debuggability (see earlier decision)
+- Block the pipeline until Debian ships a fix — but several of these
+  show `fix_deferred`/`affected` status, meaning no fix exists yet
+- Patch what's fixable (pip/setuptools/wheel via upgrade), suppress
+  the rest via .trivyignore with documented justification
+
+**Chosen:** Patch fixable findings, suppress unfixable upstream CVEs
+with .trivyignore
+
+**Rationale:** wheel and jaraco.context CVEs were fixed by upgrading
+pip/setuptools/wheel in the Dockerfile. The remaining perl/ncurses
+CVEs have no upstream fix from Debian as of the scan date — these
+packages are OS-level dependencies of the base image, not invoked by
+our application code, so the actual exploitability is low. Blocking
+the entire CI pipeline indefinitely on CVEs with no available patch
+would mean the build can never go green through no fault of our own.
+
+**Cost / risk you accepted:** We are running an image with known
+unpatched OS-level CVEs in perl/ncurses, mitigated by the fact that
+our app never invokes perl and runs as non-root with
+readOnlyRootFilesystem, limiting exploitability. We would re-run
+trivy weekly via a scheduled CI job to catch when Debian ships fixes.

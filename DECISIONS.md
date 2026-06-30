@@ -262,3 +262,33 @@ unpatched OS-level CVEs in perl/ncurses, mitigated by the fact that
 our app never invokes perl and runs as non-root with
 readOnlyRootFilesystem, limiting exploitability. We would re-run
 trivy weekly via a scheduled CI job to catch when Debian ships fixes.
+
+---
+
+### Decision: emptyDir volume for /tmp with readOnlyRootFilesystem
+**Context:** After enabling readOnlyRootFilesystem: true, the pod
+entered CrashLoopBackOff. Logs showed Python's gunicorn failing with
+FileNotFoundError: No usable temporary directory found in
+['/tmp', '/var/tmp', '/usr/tmp', '/app']. Gunicorn and Python's
+tempfile module require a writable /tmp at runtime.
+
+**Options considered:**
+- Disable readOnlyRootFilesystem — defeats the security hardening
+  entirely, reverts to a known weaker posture
+- Mount an emptyDir volume at /tmp — keeps the root filesystem
+  read-only while giving the process a writable scratch space
+  scoped to the pod lifecycle
+
+**Chosen:** emptyDir volume mounted at /tmp
+
+**Rationale:** This is the standard Kubernetes pattern for satisfying
+readOnlyRootFilesystem when a process needs scratch space. The
+emptyDir is ephemeral, tied to the pod's lifecycle, and doesn't
+weaken the security posture — an attacker who writes to /tmp still
+cannot modify the application binaries or filesystem outside that
+volume.
+
+**Cost / risk you accepted:** Slightly more complex manifest (volumes
++ volumeMounts blocks). The emptyDir consumes a small amount of node
+disk/memory depending on the storage medium configured, which we
+accepted as negligible for this workload.

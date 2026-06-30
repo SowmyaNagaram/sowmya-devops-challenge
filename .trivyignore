@@ -1,0 +1,10 @@
+# perl-base CVEs: no fix available from Debian as of scan date,
+# perl is a transitive OS dependency not used directly by our app
+CVE-2026-42496
+CVE-2026-8376
+CVE-2026-42497
+CVE-2026-48962
+CVE-2026-9538
+
+# ncurses CVEs: no fix available from Debian, not used by our app
+CVE-2025-69720

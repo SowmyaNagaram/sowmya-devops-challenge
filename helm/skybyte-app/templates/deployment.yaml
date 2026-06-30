@@ -1,4 +1,5 @@
-﻿apiVersion: apps/v1
+﻿@'
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "skybyte-app.fullname" . }}
@@ -29,6 +30,9 @@ spec:
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
+      volumes:
+        - name: tmp
+          emptyDir: {}
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -43,6 +47,9 @@ spec:
                 secretKeyRef:
                   name: api-token
                   key: token
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
@@ -74,3 +81,4 @@ spec:
             periodSeconds: 10
             failureThreshold: 2
             timeoutSeconds: 3
+'@ | Set-Content -Encoding UTF8 helm\skybyte-app\templates\deployment.yaml

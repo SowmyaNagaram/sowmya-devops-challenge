@@ -43,7 +43,9 @@ spec:
                 secretKeyRef:
                   name: api-token
                   key: token
-          securityContext:
+       securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:

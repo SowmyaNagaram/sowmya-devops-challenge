@@ -87,7 +87,7 @@ jobs:
           exit-code: '1'
           severity: HIGH,CRITICAL
 
-kyverno-policy-check:
+  kyverno-policy-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -100,3 +100,4 @@ kyverno-policy-check:
       - name: Apply Kyverno policies
         run: |
           kyverno apply policies/ --resource /tmp/rendered.yaml
+      

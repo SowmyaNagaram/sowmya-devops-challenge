@@ -1,19 +1,20 @@
 FROM python:3.11-slim
 
-# Create non-root user
+# Apply latest security patches to base image
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system appgroup && \
     useradd --system --gid appgroup --no-create-home appuser
 
 WORKDIR /app
 
-# Copy deps first for better layer caching
 COPY app/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy app code
 COPY app/ .
 
-# Switch to non-root user
 USER appuser
 
 EXPOSE 8080
